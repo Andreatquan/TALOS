@@ -1,4 +1,7 @@
+#include <Arduino.h>
 #pragma once
+#include <cstdint>
+
 
 // ─── Pin Definitions ───────────────────────────────────────────────────────
 
@@ -37,15 +40,15 @@ public:
     MotorControls();
 
     // Move both wheels forward until each has counted x encoder pulses
-    void MoveForward(int x);
+    void MoveForward(uint32_t targetPulses);
     void MoveForwardNoEncoder(int x);
 
     // Turn the robot left 90 degrees in place
-    void TurnLeft();
+    void TurnLeft(uint32_t targetPulses);
     void TurnLeftNoEncoder(int x);
 
     // Turn the robot right 90 degrees in place
-    void TurnRight();
+    void TurnRight(uint32_t targetPulses);
     void TurnRightNoEncoder(int x);
 
 private:
@@ -54,5 +57,5 @@ private:
     void setMotorB(int pwm);
 
     // Block until the given counter reaches targetPulses
-    void waitForPulses(volatile int &counter, int targetPulses);
+    void waitForPulses(volatile uint32_t &counter, uint32_t targetPulses);
 };
