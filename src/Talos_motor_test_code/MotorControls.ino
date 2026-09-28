@@ -120,7 +120,7 @@ void MotorControls::setMotorA(int pwm) {
 
 void MotorControls::setMotorB(int pwm) {
     analogWrite(PIN_MOTOR_B_PWM, pwm);
-    digitalWrite(PIN_MOTOR_B_IN1, 0);
+    digitalWrite(PIN_MOTOR_B_IN2, 0);
 }
 
 void MotorControls::waitForPulses(volatile int &counter, int targetPulses) {
