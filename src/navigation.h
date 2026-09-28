@@ -1,12 +1,7 @@
 #pragma once
 #include <Arduino.h>
-#include "esp_camera.h"
 #include "route.h"
-// #include "trafficLight.h"   // ANDREA: detectLightColor() 
-// #include "stopSign.h"       // ANDREA: detectStopSign()    
-
-// Teammates' code. Right now it all comes from stubs.h (fake versions).
-// When real code arrives: delete that section of stubs.h, uncomment the real file.
+#include "cameraTask.h"     // ANDREA: getVision(), steadyGreen(), visionFresh()
 #include "stubs.h"
 // #include "sensors.h"       // ARTURO
 // #include "power.h"         // ARTURO
@@ -20,7 +15,8 @@
 // ---------------------------------------------------------------------
 enum NavMode {
   DRIVING_ROUTE,          // following the lane between intersections
-  WAITING_AT_LIGHT,       // stopped at a stop line, waiting for green
+  LOOKING_FOR_LIGHT,      // stopped at a stop line, checking if there's a light
+  WAITING_AT_LIGHT,       // stopped at a lit intersection, waiting for green
   CROSSING_INTERSECTION,  // turning or going straight (Luke's code moves the bot)
   EXITING_COURSE,         // route done, looking for the stop sign
   STOP                    // run is over (finished or failed)
@@ -30,6 +26,7 @@ enum NavMode {
 // Settings (all PLACEHOLDERS, tune on the real course)
 // ---------------------------------------------------------------------
 static const unsigned long GREEN_CONFIRM_MS     = 250;    // green must hold this long
+static const unsigned long LIGHT_SEARCH_MS      = 1000;   // look this long before deciding "no light"
 static const unsigned long LOCKOUT_HOLD_MS      = 1000;   // ignore stop lines after a crossing
 static const unsigned long STOP_SIGN_TIMEOUT_MS = 15000;  // give up looking for stop sign
 
@@ -38,7 +35,7 @@ static const unsigned long STOP_SIGN_TIMEOUT_MS = 15000;  // give up looking for
 // ---------------------------------------------------------------------
 static NavMode       mode          = DRIVING_ROUTE;
 static int           routeIndex    = 0;      // which intersection is next
-static unsigned long greenSince    = 0;      // when green was first seen (0 = not green)
+static unsigned long lookingSince  = 0;      // when LOOKING_FOR_LIGHT started
 static unsigned long exitingSince  = 0;      // when the route finished
 static unsigned long lockoutEndsAt = 0;      // ignore stop lines until this time
 static bool          wasBlocked    = false;  // obstacle seen last loop
@@ -58,14 +55,8 @@ inline void endRun(const char *reason) {
 // Hands the intersection to Luke's code.
 inline void enterIntersection() {
   Serial.println("Entering intersection");
-  startTurn(ROUTE[routeIndex].action);   // LUKE: also handles GO_STRAIGHT
+  startTurn(ROUTE[routeIndex]);          // LUKE: also handles GO_STRAIGHT
   mode = CROSSING_INTERSECTION;
-}
-
-// main.cpp can use this to skip grabbing a camera frame when Navigation
-// doesn't need one. Skipping frames keeps lane-keeping fast.
-inline bool navigationNeedsCamera() {
-  return mode == WAITING_AT_LIGHT || mode == EXITING_COURSE;
 }
 
 // ---------------------------------------------------------------------
@@ -74,7 +65,7 @@ inline bool navigationNeedsCamera() {
 inline void navigationSetup() {
   mode          = DRIVING_ROUTE;
   routeIndex    = 0;
-  greenSince    = 0;
+  lookingSince  = 0;
   exitingSince  = 0;
   lockoutEndsAt = 0;
   wasBlocked    = false;
@@ -85,10 +76,10 @@ inline void navigationSetup() {
 }
 
 // ---------------------------------------------------------------------
-// Loop: called every loop from main.cpp
-// fb can be nullptr if main.cpp skipped the camera this loop.
+// Loop: called every loop from main.cpp (core 1).
+// Never touches the camera. Reads the camera task's latest answer.
 // ---------------------------------------------------------------------
-inline void navigationLoop(camera_fb_t *fb) {
+inline void navigationLoop() {
   readFakeInputs();   // STUB-ONLY: delete this line when real sensors are in
 
   if (mode == STOP) {
@@ -127,39 +118,59 @@ inline void navigationLoop(camera_fb_t *fb) {
 
       if (lane == LANE_STOP_LINE && !lockedOut) {
         Serial.printf("Stop line: intersection %d of %d\n", routeIndex + 1, ROUTE_LENGTH);
-        if (ROUTE[routeIndex].hasLight) {
-          stopMotors();                  // stop, then check the light
-          greenSince = 0;
+        VisionResult v = getVision();
+
+        if (steadyGreen(v, GREEN_CONFIRM_MS)) {
+          Serial.println("Steady green at the line - no stop");
+          enterIntersection();                         // green right now, keep going
+        } else if (visionFresh(v) && v.light != NO_LIGHT) {
+          Serial.println("Light seen, not steady green - stopping");
+          stopMotors();                                // red, yellow, or green just started
           mode = WAITING_AT_LIGHT;
         } else {
-          enterIntersection();           // no light, just go
+          Serial.println("No light seen - stopping to look");
+          stopMotors();                                // no light, or camera answer too old
+          lookingSince = millis();
+          mode = LOOKING_FOR_LIGHT;
         }
       } else {
-        followLane(lane);                // LUKE: steering + lane-lost handling
+        followLane(lane);                              // LUKE: steering + lane-lost handling
       }
       break;
     }
 
-    // 2. Stopped at a lit intersection. Go only on steady green.
-    //    Red, yellow, and unclear all mean wait.
-    //    TODO (later): check the light on the approach instead of always stopping.
-    case WAITING_AT_LIGHT: {
+    // 2. Stopped at a stop line. Is there a light here or not?
+    //    Any color seen      -> it's a lit intersection, wait for green.
+    //    Nothing for a while -> no light here, go.
+    //    Camera answer stale -> keep waiting (never go on a guess).
+    case LOOKING_FOR_LIGHT: {
       stopMotors();
-      bool green = (fb != nullptr) && (detectLightColor(fb) == GREEN_LIGHT);
+      VisionResult v = getVision();
 
-      if (!green) {
-        greenSince = 0;
-        break;
-      }
-      if (greenSince == 0) greenSince = millis();
-      if (millis() - greenSince >= GREEN_CONFIRM_MS) {
-        greenSince = 0;
+      if (steadyGreen(v, GREEN_CONFIRM_MS)) {
+        enterIntersection();
+      } else if (visionFresh(v) && v.light != NO_LIGHT) {
+        Serial.println("Light found - waiting for green");
+        mode = WAITING_AT_LIGHT;
+      } else if (!visionFresh(v)) {
+        lookingSince = millis();   // camera answer too old: restart the search clock
+      } else if (millis() - lookingSince >= LIGHT_SEARCH_MS) {
+        Serial.println("No light here - going");
         enterIntersection();
       }
       break;
     }
 
-    // 3. Luke's code is moving the bot through the intersection
+    // 3. Stopped at a lit intersection. Go only on steady, fresh green.
+    //    Red, yellow, unclear, and old answers all mean wait.
+    case WAITING_AT_LIGHT:
+      stopMotors();
+      if (steadyGreen(getVision(), GREEN_CONFIRM_MS)) {
+        enterIntersection();
+      }
+      break;
+
+    // 4. Luke's code is moving the bot through the intersection
     case CROSSING_INTERSECTION:
       if (isTurnComplete()) {
         routeIndex++;
@@ -175,10 +186,11 @@ inline void navigationLoop(camera_fb_t *fb) {
       }
       break;
 
-    // 4. Route finished. Drive until the stop sign.
-    //    Stop sign is only checked here, so a red light can't end the run early.
-    case EXITING_COURSE:
-      if (fb != nullptr && detectStopSign(fb)) {
+    // 5. Route finished. Drive until the stop sign.
+    //    Stop sign is only acted on here, so nothing earlier can end the run.
+    case EXITING_COURSE: {
+      VisionResult v = getVision();
+      if (visionFresh(v) && v.stopSign) {
         endRun("STOP SIGN - course complete");
       } else if (millis() - exitingSince > STOP_SIGN_TIMEOUT_MS) {
         endRun("STOP SIGN NOT FOUND - stopping");
@@ -186,6 +198,7 @@ inline void navigationLoop(camera_fb_t *fb) {
         driveForward();   // TODO: use followLane() if the exit has lane tape
       }
       break;
+    }
 
     case STOP:
       break;   // handled at the top

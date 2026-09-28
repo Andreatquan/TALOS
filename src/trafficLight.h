@@ -4,7 +4,7 @@
 
 // OV5640 capture frame (RGB565)
 //  ↓
-// Takes ROI
+// Take ROI (top half of the frame)
 //  ↓
 // Read each RGB565 pixel
 //  ↓
@@ -12,24 +12,20 @@
 //  ↓
 // Apply color thresholds
 // (Is pixel bright enough?
-// Is it saturated enough?
-// Is hue red/yellow/green?)
+//  Is it saturated enough?
+//  Is hue red/yellow/green?)
 //  ↓
-// Color thresholds
+// Count & compare red, yellow, green pixels
 //  ↓
-// Count & compare red, yellow, green pixels 
-// Return:
-// RED_LIGHT
-// YELLOW_LIGHT
-// GREEN_LIGHT
-// NO_LIGHT
+// Return RED_LIGHT / YELLOW_LIGHT / GREEN_LIGHT / NO_LIGHT
 //  ↓
-// Navigation decides what to do
+// cameraTask writes it on the note → Navigation decides what to do
 //---------------------------------------------------------------------------------------------------------------------------------------
 
-// Possible traffic light results.
+// Possible traffic light results
 enum LightColor { NO_LIGHT, RED_LIGHT, YELLOW_LIGHT, GREEN_LIGHT };
 
+// Answer into print text
 inline const char* lightName(LightColor c) {
   switch (c) {
     case RED_LIGHT:    return "RED";
@@ -59,10 +55,10 @@ static const int YELLOW_HUE_MAX    = 70;
 static const int GREEN_HUE_MIN     = 80;
 static const int GREEN_HUE_MAX     = 165;
 
-// Minimum pixels needed to trust a color.
+// Minimum pixels needed to trust a color (tuned for 240x240).
 static const int MIN_PIXELS = 40;
 
-// Converts RGB to HSV.
+// Converts RGB to HSV. Shared with stopSign.h.
 inline void rgbToHsv(int r, int g, int b, int &h, int &s, int &v) {
   int maxC = max(r, max(g, b));
   int minC = min(r, min(g, b));
@@ -90,8 +86,8 @@ inline LightColor detectLightColor(camera_fb_t *fb,
                                    long *outYellow = nullptr,
                                    long *outGreen  = nullptr) {
 
-  // Only process RGB565 frames.
-  if (fb->format != PIXFORMAT_RGB565) {
+  // Only process real RGB565 frames.
+  if (fb == nullptr || fb->format != PIXFORMAT_RGB565) {
     if (outRed)    *outRed    = 0;
     if (outYellow) *outYellow = 0;
     if (outGreen)  *outGreen  = 0;
@@ -111,6 +107,8 @@ inline LightColor detectLightColor(camera_fb_t *fb,
     for (int x = x0; x < x1; x++) {
 
       uint16_t p = px[y * fb->width + x];
+      p = (uint16_t)((p >> 8) | (p << 8));   // camera sends bytes swapped: fix order
+
 
       // Convert RGB565 to RGB.
       int r = ((p >> 11) & 0x1F) << 3;
@@ -120,7 +118,7 @@ inline LightColor detectLightColor(camera_fb_t *fb,
       int h, s, v;
       rgbToHsv(r, g, b, h, s, v);
 
-      // Ignore dim or unsaturated pixels.
+      // Ignore dull or dark pixels.
       if (s < SAT_MIN || v < VAL_MIN) continue;
 
       // Count matching colors.
@@ -139,7 +137,7 @@ inline LightColor detectLightColor(camera_fb_t *fb,
   if (outYellow) *outYellow = yellow;
   if (outGreen)  *outGreen  = green;
 
-  // Return the strongest valid color.
+  // Return the strongest valid color. Ties = NO_LIGHT (wait).
   if (red >= MIN_PIXELS && red > yellow && red > green)       return RED_LIGHT;
   if (yellow >= MIN_PIXELS && yellow > red && yellow > green) return YELLOW_LIGHT;
   if (green >= MIN_PIXELS && green > red && green > yellow)   return GREEN_LIGHT;
