@@ -48,6 +48,7 @@ void MotorControls::MoveForward(int x) {
             setMotorB(0);
             doneB = true;
         }
+        delay(1);  // prevents watchdog reset
     }
 }
 
