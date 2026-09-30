@@ -19,15 +19,12 @@ void IRAM_ATTR onEncoderB() { pulseCountB++; }
 // ─────────────────────────────────────────────────────────────
 MotorControls::MotorControls() {
 
-    // Configure PWM channels (LEDC)
-    ledcAttachPin(PIN_MOTOR_A_PWM, 0);
-    ledcSetup(0, 20000, 8);   // 20 kHz, 8‑bit
-
-    ledcAttachPin(PIN_MOTOR_B_PWM, 1);
-    ledcSetup(1, 20000, 8);   // 20 kHz, 8‑bit
-
-    // Direction pins
+    // PWM for Motor A
+    ledcAttach(PIN_MOTOR_A_PWM, 20000, 8);   // freq, resolution
     pinMode(PIN_MOTOR_A_IN2, OUTPUT);
+
+    // PWM for Motor B
+    ledcAttach(PIN_MOTOR_B_PWM, 20000, 8);
     pinMode(PIN_MOTOR_B_IN2, OUTPUT);
 
     // Encoder inputs
@@ -37,6 +34,7 @@ MotorControls::MotorControls() {
     attachInterrupt(digitalPinToInterrupt(PIN_ENC_A), onEncoderA, RISING);
     attachInterrupt(digitalPinToInterrupt(PIN_ENC_B), onEncoderB, RISING);
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // Public movement functions
@@ -131,14 +129,15 @@ void MotorControls::TurnLeftNoEncoder(int ms) {
 // ─────────────────────────────────────────────────────────────
 
 void MotorControls::setMotorA(int pwm) {
-    ledcWrite(0, pwm);
+    ledcWrite(PIN_MOTOR_A_PWM, pwm);
     digitalWrite(PIN_MOTOR_A_IN2, LOW);
 }
 
 void MotorControls::setMotorB(int pwm) {
-    ledcWrite(1, pwm);
+    ledcWrite(PIN_MOTOR_B_PWM, pwm);
     digitalWrite(PIN_MOTOR_B_IN2, LOW);
 }
+
 
 void MotorControls::waitForPulses(volatile uint32_t &counter, uint32_t target) {
     while (counter < target) {
