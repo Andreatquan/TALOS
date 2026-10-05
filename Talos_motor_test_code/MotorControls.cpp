@@ -141,6 +141,12 @@ void MotorControls::setMotorB(int pwm) {
 
 void MotorControls::waitForPulses(volatile uint32_t &counter, uint32_t target) {
     while (counter < target) {
-        delay(1);   // keeps watchdog happy
+        delay(1);
     }
+
+    // brief reverse pulse to counter overshoot
+    ledcWrite(PIN_MOTOR_A_PWM, 0);
+    ledcWrite(PIN_MOTOR_B_PWM, 0);
 }
+
+
