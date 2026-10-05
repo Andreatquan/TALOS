@@ -5,12 +5,12 @@
 // ─────────────────────────────────────────────────────────────
 // Encoder counters (volatile, 32‑bit for safety)
 // ─────────────────────────────────────────────────────────────
-volatile uint32_t pulseCountA = 0;
-volatile uint32_t pulseCountB = 0;
+volatile uint32_t pulseCountR = 0;
+volatile uint32_t pulseCountL = 0;
 
 // ISR: increment counters on rising edge
-void IRAM_ATTR onEncoderA() { pulseCountA++; }
-void IRAM_ATTR onEncoderB() { pulseCountB++; }
+void IRAM_ATTR onEncoderR() { pulseCountR++; }
+void IRAM_ATTR onEncoderL() { pulseCountL++; }
 
 // ─────────────────────────────────────────────────────────────
 // Constructor
@@ -18,19 +18,19 @@ void IRAM_ATTR onEncoderB() { pulseCountB++; }
 MotorControls::MotorControls() {
 
     // PWM for Motor A
-    ledcAttach(PIN_MOTOR_A_PWM, 20000, 8);   // freq, resolution
-    pinMode(PIN_MOTOR_A_IN2, OUTPUT);
+    ledcAttach(PIN_MOTOR_R_PWM, 20000, 8);   // freq, resolution
+    pinMode(PIN_MOTOR_R_IN2, OUTPUT);
 
     // PWM for Motor B
-    ledcAttach(PIN_MOTOR_B_PWM, 20000, 8);
-    pinMode(PIN_MOTOR_B_IN2, OUTPUT);
+    ledcAttach(PIN_MOTOR_L_PWM, 20000, 8);
+    pinMode(PIN_MOTOR_L_IN2, OUTPUT);
 
     // Encoder inputs
-    pinMode(PIN_ENC_A, INPUT_PULLUP);
-    pinMode(PIN_ENC_B, INPUT_PULLUP);
+    pinMode(PIN_ENC_R, INPUT_PULLUP);
+    pinMode(PIN_ENC_L, INPUT_PULLUP);
 
-    attachInterrupt(digitalPinToInterrupt(PIN_ENC_A), onEncoderA, RISING);
-    attachInterrupt(digitalPinToInterrupt(PIN_ENC_B), onEncoderB, RISING);
+    attachInterrupt(digitalPinToInterrupt(PIN_ENC_R), onEncoderR, RISING);
+    attachInterrupt(digitalPinToInterrupt(PIN_ENC_L), onEncoderL, RISING);
 }
 
 
@@ -44,99 +44,123 @@ void MotorControls::MoveForward(uint32_t targetPulses) {
     startBothMotors(PWM_SPEED);
 
     // Wait for each motor independently
-    waitForPulses(pulseCountA, targetPulses);
-    stopMotorA();
+    waitForPulses(pulseCountR, targetPulses);
+    stopMotorR();
 
-    waitForPulses(pulseCountB, targetPulses);
-    stopMotorB();
+    waitForPulses(pulseCountL, targetPulses);
+    stopMotorL();
 }
 
 void MotorControls::TurnRight(uint32_t targetPulses) {
 
-    noInterrupts();
-    pulseCountB = 0;
-    interrupts();
+    resetEncoderL();          // clear right encoder
+    startRightMotor(PWM_SPEED);
+    stopLeftMotor();          // left wheel stays still
 
-    setMotorA(0);
-    setMotorB(PWM_SPEED);
+    waitForPulses(pulseCountL, targetPulses);
 
-    waitForPulses(pulseCountB, targetPulses);
-
-    setMotorB(0);
+    stopRightMotor();
 }
+
 
 void MotorControls::TurnLeft(uint32_t targetPulses) {
 
-    noInterrupts();
-    pulseCountA = 0;
-    interrupts();
+    resetEncoderR();          // clear left encoder
+    startLeftMotor(PWM_SPEED);
+    stopRightMotor();         // right wheel stays still
 
-    setMotorA(PWM_SPEED);
-    setMotorB(0);
+    waitForPulses(pulseCountR, targetPulses);
 
-    waitForPulses(pulseCountA, targetPulses);
-
-    setMotorA(0);
+    stopLeftMotor();
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // No‑encoder timed movement
 // ─────────────────────────────────────────────────────────────
 
 void MotorControls::MoveForwardNoEncoder(int ms) {
-    setMotorA(PWM_SPEED + 20);
-    setMotorB(PWM_SPEED);
+    setMotorR(PWM_SPEED + 20);
+    setMotorL(PWM_SPEED);
     delay(ms);
-    setMotorA(0);
-    setMotorB(0);
+    setMotorR(0);
+    setMotorL(0);
 }
 
 void MotorControls::TurnRightNoEncoder(int ms) {
-    setMotorA(0);
-    setMotorB(PWM_SPEED);
+    setMotorR(0);
+    setMotorL(PWM_SPEED);
     delay(ms);
-    setMotorB(0);
+    setMotorL(0);
 }
 
 void MotorControls::TurnLeftNoEncoder(int ms) {
-    setMotorA(PWM_SPEED);
-    setMotorB(0);
+    setMotorR(PWM_SPEED);
+    setMotorL(0);
     delay(ms);
-    setMotorA(0);
+    setMotorR(0);
 }
 
 // ─────────────────────────────────────────────────────────────
 // Private helpers
 // ─────────────────────────────────────────────────────────────
 
-void MotorControls::setMotorA(int pwm) {
-    ledcWrite(PIN_MOTOR_A_PWM, pwm);
-    digitalWrite(PIN_MOTOR_A_IN2, LOW);
+void MotorControls::setMotorR(int pwm) {
+    ledcWrite(PIN_MOTOR_R_PWM, pwm);
+    digitalWrite(PIN_MOTOR_R_IN2, LOW);
 }
 
-void MotorControls::setMotorB(int pwm) {
-    ledcWrite(PIN_MOTOR_B_PWM, pwm);
-    digitalWrite(PIN_MOTOR_B_IN2, LOW);
+void MotorControls::setMotorL(int pwm) {
+    ledcWrite(PIN_MOTOR_L_PWM, pwm);
+    digitalWrite(PIN_MOTOR_L_IN2, LOW);
 }
 
 void MotorControls::resetEncoders() {
     noInterrupts();
-    pulseCountA = 0;
-    pulseCountB = 0;
+    pulseCountR = 0;
+    pulseCountL = 0;
+    interrupts();
+}
+
+void MotorControls::resetEncoderR() {
+    noInterrupts();
+    pulseCountR = 0;
+    interrupts();
+}
+
+void MotorControls::resetEncoderL() {
+    noInterrupts();
+    pulseCountL = 0;
     interrupts();
 }
 
 void MotorControls::startBothMotors(int pwm) {
-    setMotorA(pwm);
-    setMotorB(pwm);
+    setMotorR(pwm);
+    setMotorL(pwm);
 }
 
-void MotorControls::stopMotorA() {
-    setMotorA(0);
+void MotorControls::startMotorR(int pwm) {
+    setMotorR(pwm);
 }
 
-void MotorControls::stopMotorB() {
-    setMotorB(0);
+void MotorControls::startMotorL(int pwm) {
+    setMotorL(pwm);
+}
+
+void MotorControls::stopMotorR() {
+    setMotorR(0);
+}
+
+void MotorControls::stopMotorL() {
+    setMotorL(0);
+}
+
+void MotorControls::stopMotorR() {
+    setMotorR(0);
+}
+
+void MotorControls::stopMotorL() {
+    setMotorL(0);
 }
 
 
@@ -146,8 +170,8 @@ void MotorControls::waitForPulses(volatile uint32_t &counter, uint32_t target) {
     }
 
     // brief reverse pulse to counter overshoot
-    ledcWrite(PIN_MOTOR_A_PWM, 0);
-    ledcWrite(PIN_MOTOR_B_PWM, 0);
+    ledcWrite(PIN_MOTOR_R_PWM, 0);
+    ledcWrite(PIN_MOTOR_L_PWM, 0);
 }
 
 
