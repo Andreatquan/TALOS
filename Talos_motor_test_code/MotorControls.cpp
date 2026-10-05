@@ -2,8 +2,6 @@
 #include <driver/ledc.h>
 #include "MotorControls.h"
 
-
-
 // ─────────────────────────────────────────────────────────────
 // Encoder counters (volatile, 32‑bit for safety)
 // ─────────────────────────────────────────────────────────────
@@ -42,32 +40,15 @@ MotorControls::MotorControls() {
 
 void MotorControls::MoveForward(uint32_t targetPulses) {
 
-    // Reset counters safely
-    noInterrupts();
-    pulseCountA = 0;
-    pulseCountB = 0;
-    interrupts();
+    resetEncoders();
+    startBothMotors(PWM_SPEED);
 
-    setMotorA(PWM_SPEED);
-    setMotorB(PWM_SPEED);
+    // Wait for each motor independently
+    waitForPulses(pulseCountA, targetPulses);
+    stopMotorA();
 
-    bool doneA = false;
-    bool doneB = false;
-
-    while (!doneA || !doneB) {
-
-        if (!doneA && pulseCountA >= targetPulses) {
-            setMotorA(0);
-            doneA = true;
-        }
-
-        if (!doneB && pulseCountB >= targetPulses) {
-            setMotorB(0);
-            doneB = true;
-        }
-
-        delay(1);   // prevents watchdog reset, keeps USB alive
-    }
+    waitForPulses(pulseCountB, targetPulses);
+    stopMotorB();
 }
 
 void MotorControls::TurnRight(uint32_t targetPulses) {
@@ -136,6 +117,26 @@ void MotorControls::setMotorA(int pwm) {
 void MotorControls::setMotorB(int pwm) {
     ledcWrite(PIN_MOTOR_B_PWM, pwm);
     digitalWrite(PIN_MOTOR_B_IN2, LOW);
+}
+
+void MotorControls::resetEncoders() {
+    noInterrupts();
+    pulseCountA = 0;
+    pulseCountB = 0;
+    interrupts();
+}
+
+void MotorControls::startBothMotors(int pwm) {
+    setMotorA(pwm);
+    setMotorB(pwm);
+}
+
+void MotorControls::stopMotorA() {
+    setMotorA(0);
+}
+
+void MotorControls::stopMotorB() {
+    setMotorB(0);
 }
 
 

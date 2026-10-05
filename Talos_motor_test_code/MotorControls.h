@@ -56,6 +56,12 @@ private:
     void setMotorA(int pwm);
     void setMotorB(int pwm);
 
+    void stopMotorA();
+    void stopMotorB();
+
+    void resetEncoders();
+    void startBothMotors(int pwm);
+
     // Block until the given counter reaches targetPulses
     void waitForPulses(volatile uint32_t &counter, uint32_t targetPulses);
 };
