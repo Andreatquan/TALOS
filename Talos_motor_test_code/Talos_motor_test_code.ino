@@ -2,7 +2,7 @@
 #include "MotorControls.h"
 
 #define PIN_BUTTON  0
-
+/*
 MotorControls motors;
 bool running = false;
 
@@ -24,15 +24,21 @@ bool buttonPressed() {
 // standard Arduino initialization for a serial console and a pull‑up‑configured button input.
 // initializes USB serial communication at 115200 baud, configures the button pin as an input with an internal pull‑up resistor, and prints a startup message.
 void setup() {
-    Serial.begin(115200);
+    /*Serial.begin(115200);
     pinMode(PIN_BUTTON, INPUT_PULLUP);
     Serial.println("Boot complete. Waiting for button press...");
+    
+    pinMode(2, OUTPUT);   // LED pin
+    digitalWrite(2, LOW); // LED off initially
+
 }
 
 
 //loop()
 // Main loop for motor testing demonstration. this is a hardcoded demo using the outdated time-based methods.
 void loop() {
+    
+ 
     // when the button is pressed, print message, delay 2s and then continue.
     if (!running) {
         if (buttonPressed()) {
@@ -47,6 +53,7 @@ void loop() {
     //pull up to intersection
     Serial.println("Moving forward...");
     motors.MoveForward(100);
+    */
 /*
     //wait at stop bar
     delay(2000);
@@ -72,10 +79,62 @@ void loop() {
     //motors.TurnLeftNoEncoder(2000);
 
     running = false;
-*/
+
 
     if (buttonPressed()) {
         Serial.println("Stopped.");
         running = false;
+    }
+}
+*/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ---------------- Encoder Test ----------------
+
+// Choose your encoder pins
+//#define ENC_A 48
+#define ENC_B 42
+
+// LED pin 
+#define LED_PIN 38
+
+volatile uint32_t pulseB = 0;
+
+// ISR routines
+void IRAM_ATTR onEncB() { pulseB++; }
+
+void setup() {
+    Serial.begin(115200);
+
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, LOW);
+
+    pinMode(ENC_B, INPUT_PULLUP);
+
+    attachInterrupt(digitalPinToInterrupt(ENC_B), onEncB, CHANGE);
+
+    Serial.println("Encoder test ready. Spin the wheels.");
+}
+
+void loop() {
+
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+
+
+    static uint32_t lastB = 0;
+
+    // If either encoder count changed, flash LED and print counts
+    if (pulseB != lastB) {
+        digitalWrite(LED_PIN, HIGH);
+        delay(10);
+        digitalWrite(LED_PIN, LOW);
+
+
+        Serial.print("  B: ");
+        Serial.println(pulseB);
+
+        lastB = pulseB;
     }
 }
