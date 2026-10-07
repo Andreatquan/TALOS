@@ -37,6 +37,28 @@ bool buttonPressed() {
     return false;
 }
 
+//makes the running varible swap between true and false upon pressing boot button. 
+void On_Off_Switch(){
+    if (!running) {
+        if (buttonPressed()) {
+            Serial.println("Button pressed! Starting in 1 second...");
+            delay(1000);
+            running = true;
+            Serial.println("Running!");
+        }
+        return;
+    }
+    else {
+        if (buttonPressed()) {
+            Serial.println("Button pressed! Shutting down in 1 second...");
+            delay(1000);
+            running = false;
+            Serial.println("Stopping!");
+        }
+        return;
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- Encoder Test ----------------
 void setup() {
@@ -54,46 +76,39 @@ void setup() {
 
 void loop() {
     
-    //when the button is pressed, print message, delay 1s and then continue.
-    if (!running) {
-        if (buttonPressed()) {
-            Serial.println("Button pressed! Starting in 1 second...");
-            delay(1000);
-            running = true;
-            Serial.println("Running!");
+    On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
+    if(running){
+        
+        pulseL = digitalRead(ENC_L);
+        if(pulseL == HIGH){
+            Serial.println("High");
         }
-        return;
+        else{
+            Serial.println("Low");
+        }
+        
+
+        
+    /*
+        // If either encoder count changed, flash LED and print counts
+        if (pulseL != lastL) {
+
+            Serial.print("  L: ");
+            Serial.println(pulseL);
+
+            lastL = pulseL;
+        }
+        Serial.println("loop restarting");
+
+
+        if (pulseL > 6000) {
+            Serial.println("Stopped.");
+            Serial.print("  L: ");
+            Serial.println(pulseL);
+            running = false;
+        }
+    */
     }
-
-    pulseL = digitalRead(ENC_L);
-    if(pulseL == HIGH){
-        Serial.println("High");
-    }
-    else{
-        Serial.println("Low");
-    }
-    
-
-    
-/*
-    // If either encoder count changed, flash LED and print counts
-    if (pulseL != lastL) {
-
-        Serial.print("  L: ");
-        Serial.println(pulseL);
-
-        lastL = pulseL;
-    }
-    Serial.println("loop restarting");
-
-
-    if (pulseL > 6000) {
-        Serial.println("Stopped.");
-        Serial.print("  L: ");
-        Serial.println(pulseL);
-        running = false;
-    }
-*/
 }
 
 
