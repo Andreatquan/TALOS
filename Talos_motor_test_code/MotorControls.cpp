@@ -17,11 +17,11 @@ void IRAM_ATTR onEncoderL() { pulseCountL++; }
 // ─────────────────────────────────────────────────────────────
 MotorControls::MotorControls() {
 
-    // PWM for Motor A
+    // PWM for Motor Right
     ledcAttach(PIN_MOTOR_R_PWM, 20000, 8);   // freq, resolution
     pinMode(PIN_MOTOR_R_IN2, OUTPUT);
 
-    // PWM for Motor B
+    // PWM for Motor Left
     ledcAttach(PIN_MOTOR_L_PWM, 20000, 8);
     pinMode(PIN_MOTOR_L_IN2, OUTPUT);
 

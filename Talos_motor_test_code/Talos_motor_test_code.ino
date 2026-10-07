@@ -1,15 +1,29 @@
 #include <Arduino.h>
 #include "MotorControls.h"
 
+// button pin
 #define PIN_BUTTON  0
+// encoder pins
+#define ENC_L 42
 
-#define LED_PIN 38
-#define NUM_LEDS 1
+//intitialization of pulse counter for testing within main
+volatile uint32_t pulseL = 0;
+static uint32_t lastL = 0;
 
+// ISR routines
+void IRAM_ATTR onEncL() { pulseL++; }
+
+//MotorControl object 
 MotorControls motors;
+
+// Variable to start and stop looping in test
 bool running = false;
 
-/*
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ---------------- local methods ----------------
+
 // buttonPressed()
 // The function returns true only once per physical press, after confirming the button is held for ~50 ms (debounce) and then waiting until the user releases it before returning.
 bool buttonPressed() {
@@ -22,96 +36,69 @@ bool buttonPressed() {
     }
     return false;
 }
-*/
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- Encoder Test ----------------
-
-// encoder pins
-#define ENC_B 42
-
-// LED pin 
-//#define LED_PIN 38
-
-//volatile uint32_t pulseB = 0;
-static uint32_t lastB = 0;
-
-// ISR routines
-//void IRAM_ATTR onEncB() { pulseB++; }
-
 void setup() {
 
-    Serial.begin(19200);
-    //pinMode(PIN_BUTTON, INPUT_PULLUP);
-    //Serial.println("Boot complete. Waiting for button press...");
+    Serial.begin(19200); // 115200 is default
+    pinMode(PIN_BUTTON, INPUT_PULLUP);
+    Serial.println("Boot complete. Waiting for button press...");
 
-    //Serial.begin(115200);
+    pinMode(ENC_L, INPUT);
 
-    //pinMode(LED_PIN, OUTPUT);
-    //digitalWrite(LED_PIN, LOW);
-
-    pinMode(ENC_B, INPUT);
-
-    //attachInterrupt(digitalPinToInterrupt(ENC_B), onEncB, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENC_L), onEncL, CHANGE);
 
     Serial.println("Encoder test ready. Spin the wheels.");
 }
 
 void loop() {
-        
-    int pulseB = digitalRead(ENC_B);
-    Serial.println(pulseB);
-    /*
-    if(pulseB == HIGH){
+    
+    //when the button is pressed, print message, delay 1s and then continue.
+    if (!running) {
+        if (buttonPressed()) {
+            Serial.println("Button pressed! Starting in 1 second...");
+            delay(1000);
+            running = true;
+            Serial.println("Running!");
+        }
+        return;
+    }
+
+    pulseL = digitalRead(ENC_L);
+    if(pulseL == HIGH){
         Serial.println("High");
     }
     else{
         Serial.println("Low");
     }
-    */
-
-    // when the button is pressed, print message, delay 1s and then continue.
-    // if (!running) {
-    //     if (buttonPressed()) {
-    //         Serial.println("Button pressed! Starting in 1 second...");
-    //         delay(1000);
-    //         running = true;
-    //         Serial.println("Running!");
-    //         pulseB=0;
-    //     }
-    //     return;
-    // }
-/*
-    digitalWrite(LED_PIN, HIGH); // not working bc its an RGB LED
-    Serial.println("LED on...");
-    delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    Serial.println("LED off...");
-    delay(1000);*/
+    
 
     
 /*
     // If either encoder count changed, flash LED and print counts
-    if (pulseB != lastB) {
+    if (pulseL != lastL) {
 
-        Serial.print("  B: ");
-        Serial.println(pulseB);
+        Serial.print("  L: ");
+        Serial.println(pulseL);
 
-        lastB = pulseB;
+        lastL = pulseL;
     }
     Serial.println("loop restarting");
 
 
-    if (pulseB > 6000) {
+    if (pulseL > 6000) {
         Serial.println("Stopped.");
-        Serial.print("  B: ");
-        Serial.println(pulseB);
+        Serial.print("  L: ");
+        Serial.println(pulseL);
         running = false;
     }
 */
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ---------------- D1 Test adapted (unsuccessfully tested) ----------------
 /*
 
 // setup()
