@@ -2,7 +2,7 @@
 #include "MotorControls.h"
 
 #define PIN_BUTTON  0
-/*
+
 MotorControls motors;
 bool running = false;
 
@@ -19,6 +19,7 @@ bool buttonPressed() {
     }
     return false;
 }
+/*
 
 // setup()
 // standard Arduino initialization for a serial console and a pull‑up‑configured button input.
@@ -28,8 +29,6 @@ void setup() {
     pinMode(PIN_BUTTON, INPUT_PULLUP);
     Serial.println("Boot complete. Waiting for button press...");
     
-    pinMode(2, OUTPUT);   // LED pin
-    digitalWrite(2, LOW); // LED off initially
 
 }
 
@@ -91,8 +90,7 @@ void loop() {
 
 // ---------------- Encoder Test ----------------
 
-// Choose your encoder pins
-//#define ENC_A 48
+// encoder pins
 #define ENC_B 42
 
 // LED pin 
@@ -104,7 +102,12 @@ volatile uint32_t pulseB = 0;
 void IRAM_ATTR onEncB() { pulseB++; }
 
 void setup() {
+
     Serial.begin(115200);
+    pinMode(PIN_BUTTON, INPUT_PULLUP);
+    Serial.println("Boot complete. Waiting for button press...");
+
+    //Serial.begin(115200);
 
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, LOW);
@@ -117,6 +120,16 @@ void setup() {
 }
 
 void loop() {
+    // when the button is pressed, print message, delay 1s and then continue.
+    if (!running) {
+        if (buttonPressed()) {
+            Serial.println("Button pressed! Starting in 1 second...");
+            delay(1000);
+            running = true;
+            Serial.println("Running!");
+        }
+        return;
+    }
 
     digitalWrite(LED_PIN, HIGH);
     delay(1000);
