@@ -4,6 +4,7 @@
 
 #define PIN_BUTTON  0   // button pin
 #define ENC_L 42        // left encoder pin
+#define ENC_R 1        // Right encoder pin
 
 MotorControls motors;   //MotorControl object
 
@@ -15,12 +16,16 @@ uint TargetPulses;      // number to stop when the count reaches it.
 volatile uint32_t PulseCounterL;//intitialization of pulse counter for testing within main
 static uint32_t LastPulseCountL;//intitialization of pulse counter value storage for testing within main
 
+volatile uint32_t PulseCounterR;//intitialization of pulse counter for testing within main
+static uint32_t LastPulseCountR;//intitialization of pulse counter value storage for testing within main
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- local methods ----------------
 
 // ISR routines - increments the Pulse counter L variable every time a pulse is detected on the left motor
-void IRAM_ATTR onEncL() { PulseCounterL++; }    
+void IRAM_ATTR onEncL() { PulseCounterL++; }   
+void IRAM_ATTR onEncR() { PulseCounterR++; }   
 
 // The function returns true only once per physical press, after confirming the button is held for ~50 ms (debounce) and then waiting until the user releases it before returning.
 bool buttonPressed() {
@@ -111,12 +116,18 @@ bool UpdatePulseCount(int OldPulseCount, int NewPulseCount){
     return false;
 }
 bool UpdatePulseCount(){
+    bool change=false;
     if (PulseCounterL != LastPulseCountL) {
         //set count to new value
         SetPulseCount(LastPulseCountL, PulseCounterL);
-        return true;
+        change = true;
     }
-    return false;
+    if (PulseCounterR != LastPulseCountR) {
+        //set count to new value
+        SetPulseCount(LastPulseCountR, PulseCounterR);
+        change = true;
+    }
+    return change;
 }
 // change pulse count to new value
 void SetPulseCount(int OldPulseCount, int NewPulseCount){
@@ -130,14 +141,20 @@ void SetPulseCount(int OldPulseCount, int NewPulseCount){
 void setup() {
     PulseCounterL=0;
     LastPulseCountL=0;
+    PulseCounterR=0;
+    LastPulseCountR=0;
     TargetPulses=5000;
 
-    Serial.begin(115200); // 115200 is default, but i've also been using 19200
+    motors = MotorControls();
+
+    Serial.begin(19200); // 115200 is default, but i've also been using 19200
     pinMode(PIN_BUTTON, INPUT_PULLUP);
 
     pinMode(ENC_L, INPUT);
+    pinMode(ENC_R, INPUT);
 
     attachInterrupt(digitalPinToInterrupt(ENC_L), onEncL, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENC_R), onEncR, CHANGE);
 
     Serial.println("Encoder test ready. Spin the wheels!");
     Serial.println("Boot complete. Waiting for button press...");
@@ -145,10 +162,14 @@ void setup() {
 
 void loop() {
     
+    
+
     On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
     if(running){
-        
-        if(IsPinHigh(ENC_L, PulseCounterL)){ // print whether the encoder pin is high or low
+
+        motors.setMotorR(255);
+
+        if(IsPinHigh(ENC_R, PulseCounterR)){ // print whether the right encoder pin is high or low
             Serial.println("High");
         }
         else{
@@ -156,12 +177,16 @@ void loop() {
         }
 
         if(UpdatePulseCount()){//if the pulse count has changed
-            if (IsPulseTargetMet(PulseCounterL)) { // check if target pulses have been reached/passed
+            if (IsPulseTargetMet(PulseCounterR)) { // check if target pulses have been reached/passed
                 //If so,
-                PrintPulseCountWithName(PulseCounterL, "L");  //print the count
+                PrintPulseCountWithName(PulseCounterR, "R");  //print the count
                 turnOffRunning();                             // and stop the loop.
             }
         }
+        PrintPulseCountWithName(PulseCounterR, "R");
+    }
+    else{
+        motors.setMotorR(0);
     }
     //Serial.println("Main loop restarting");
 }

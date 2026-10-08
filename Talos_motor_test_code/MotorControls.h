@@ -51,7 +51,10 @@ public:
     void TurnRight(uint32_t targetPulses);
     void TurnRightNoEncoder(int x);
 
-private:
+
+
+//future Private methods::
+//
     // Drive a single motor at the given PWM duty (0 = stop)
     void setMotorR(int pwm);
     void setMotorL(int pwm);
@@ -69,4 +72,7 @@ private:
 
     // Block until the given counter reaches targetPulses
     void waitForPulses(volatile uint32_t &counter, uint32_t targetPulses);
+
+private:
+
 };
