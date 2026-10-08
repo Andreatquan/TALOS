@@ -1,32 +1,27 @@
 #include <Arduino.h>
 #include "MotorControls.h"
 
-// button pin
-#define PIN_BUTTON  0
-// encoder pins
-#define ENC_L 42
 
-//intitialization of pulse counter for testing within main
-volatile uint32_t pulseL = 0;
-static uint32_t lastL = 0;
+#define PIN_BUTTON  0   // button pin
+#define ENC_L 42        // left encoder pin
 
-// ISR routines
-void IRAM_ATTR onEncL() { pulseL++; }
+MotorControls motors;   //MotorControl object
 
-//MotorControl object 
-MotorControls motors;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ---------------- varibles for testing: ----------------
 
-// Variable to start and stop looping in test
-bool running = false;
-
-// varibles for testing: 
-uint TargetPulses = 5000;
+bool running = false;   // Variable to start and stop looping in test
+uint TargetPulses;      // number to stop when the count reaches it.
+volatile uint32_t PulseCounterL;//intitialization of pulse counter for testing within main
+static uint32_t LastPulseCountL;//intitialization of pulse counter value storage for testing within main
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- local methods ----------------
 
-// buttonPressed()
+// ISR routines - increments the Pulse counter L variable every time a pulse is detected on the left motor
+void IRAM_ATTR onEncL() { PulseCounterL++; }    
+
 // The function returns true only once per physical press, after confirming the button is held for ~50 ms (debounce) and then waiting until the user releases it before returning.
 bool buttonPressed() {
     if (digitalRead(PIN_BUTTON) == LOW) {
@@ -45,8 +40,7 @@ void On_Off_Switch(){
         if (buttonPressed()) {
             Serial.println("Button pressed! Starting in 1 second...");
             delay(1000);
-            running = true;
-            Serial.println("Running!");
+            turnOnRunning();
         }
         return;
     }
@@ -54,16 +48,89 @@ void On_Off_Switch(){
         if (buttonPressed()) {
             Serial.println("Button pressed! Shutting down in 1 second...");
             delay(1000);
-            running = false;
-            Serial.println("Stopping!");
+            turnOffRunning();
         }
         return;
     }
+}
+void turnOnRunning(){
+    running = true;
+    Serial.println("Running!");
+}
+void turnOffRunning(){
+    running = false;
+    Serial.println("Stopping!");
+}
+
+// show on serial monitor whether the Left encoder is HIGH or LOW
+bool IsPinHigh(int PinNum, int PulseCounter){
+    PulseCounter = digitalRead(PinNum);
+    if(PulseCounter){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+// print count
+void PrintPulseCount(int PulseCounter){
+    //print the pulse counter
+    Serial.println(PulseCounter);
+    return;
+}
+// print count with name
+void PrintPulseCountWithName(int PulseCounter, String PulseCounterName){
+    //print the pulse counter with its label/name
+    Serial.print(PulseCounterName);
+    Serial.print(": ");
+    Serial.println(PulseCounter);
+    return;
+}
+// check if target pulses have been passed. NOTE: this method does not update the count
+bool IsPulseTargetMet(int PulseTarget, int PulseCount){
+    if (PulseCount > PulseTarget) { 
+        return true;
+    }
+    return false;
+}
+bool IsPulseTargetMet(int PulseCount){
+    if (PulseCount > TargetPulses) { 
+        return true;
+    }
+    return false;
+}
+
+// check if pulse count has changed, If encoder count changed, update count and return true. else return false.
+bool UpdatePulseCount(int OldPulseCount, int NewPulseCount){
+    if (NewPulseCount != OldPulseCount) {
+        //set count to new value
+        SetPulseCount(OldPulseCount, NewPulseCount);
+        return true;
+    }
+    return false;
+}
+bool UpdatePulseCount(){
+    if (PulseCounterL != LastPulseCountL) {
+        //set count to new value
+        SetPulseCount(LastPulseCountL, PulseCounterL);
+        return true;
+    }
+    return false;
+}
+// change pulse count to new value
+void SetPulseCount(int OldPulseCount, int NewPulseCount){
+    // update last pulse count to the new count
+    OldPulseCount = NewPulseCount;
+    return;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- Encoder Test ----------------
 void setup() {
+    PulseCounterL=0;
+    LastPulseCountL=0;
+    TargetPulses=5000;
 
     Serial.begin(115200); // 115200 is default, but i've also been using 19200
     pinMode(PIN_BUTTON, INPUT_PULLUP);
@@ -81,37 +148,22 @@ void loop() {
     On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
     if(running){
         
-        /*// show on serial monitor whether the Left encoder is HIGH or LOW
-        pulseL = digitalRead(ENC_L);
-        if(pulseL == HIGH){
+        if(IsPinHigh(ENC_L, PulseCounterL)){ // print whether the encoder pin is high or low
             Serial.println("High");
         }
         else{
             Serial.println("Low");
         }
-        */
 
-        
-    
-        // If either encoder count changed, print counts
-        if (pulseL != lastL) {
-
-            Serial.print("  L: ");
-            Serial.println(pulseL);
-
-            lastL = pulseL;
+        if(UpdatePulseCount()){//if the pulse count has changed
+            if (IsPulseTargetMet(PulseCounterL)) { // check if target pulses have been reached/passed
+                //If so,
+                PrintPulseCountWithName(PulseCounterL, "L");  //print the count
+                turnOffRunning();                             // and stop the loop.
+            }
         }
-        Serial.println("loop restarting");
-
-
-        if (pulseL > TargetPulses) {
-            Serial.println("Stopped.");
-            Serial.print("  L: ");
-            Serial.println(pulseL);
-            running = false;
-        }
-    
     }
+    //Serial.println("Main loop restarting");
 }
 
 
