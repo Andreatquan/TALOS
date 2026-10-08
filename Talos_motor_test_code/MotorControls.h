@@ -1,0 +1,70 @@
+#include <Arduino.h>
+#pragma once
+#include <cstdint>
+
+
+// ─── Pin Definitions ───────────────────────────────────────────────────────
+
+// Motor R (Right wheel) – AIN1 and PWM tied together // STBY is wired directly to 3.3V, no GPIO needed
+#define PIN_MOTOR_R_PWM   39
+#define PIN_MOTOR_R_IN2   38
+#define PIN_ENC_R         48  // Right wheel Encoder (single-phase only)
+
+// Motor L (Left wheel) – BIN1 and PWM tied together // STBY is wired directly to 3.3V, no GPIO needed
+#define PIN_MOTOR_L_PWM   41
+#define PIN_MOTOR_L_IN2   40
+#define PIN_ENC_L         42  // Left wheel Encoder (single-phase only)
+
+// IR Sensors
+#define PIN_IR_Front      14  // Front IR sensor(downward facing)
+#define PIN_IR_Right      47  // Right IR sensor
+#define PIN_IR_left       21  // Left IR sensor
+
+// Ultrasonic Sensor
+#define PIN_Ultra_Trig       1   // GPIO 1 = Ultrasonic Trig
+#define PIN_Ultra_Echo       2   // GPIO 2 = Ultrasonic Echo
+
+// ─── Tuning Constants (calibrate these for your bot) ──────────────────────
+#define PWM_SPEED         200   // 0-255 duty cycle
+#define PULSES_PER_TURN   150   // encoder pulses for a 90-degree pivot turn
+
+
+
+//────────────────────────────────────────────────────────────────────────────
+
+
+class MotorControls {
+public:
+    MotorControls();
+
+    // Move both wheels forward until each has counted x encoder pulses
+    void MoveForward(uint32_t targetPulses);
+    void MoveForwardNoEncoder(int x);
+
+    // Turn the robot left 90 degrees in place
+    void TurnLeft(uint32_t targetPulses);
+    void TurnLeftNoEncoder(int x);
+
+    // Turn the robot right 90 degrees in place
+    void TurnRight(uint32_t targetPulses);
+    void TurnRightNoEncoder(int x);
+
+private:
+    // Drive a single motor at the given PWM duty (0 = stop)
+    void setMotorR(int pwm);
+    void setMotorL(int pwm);
+
+    void stopMotorR();
+    void stopMotorL();
+
+    void resetEncoders();
+    void resetEncoderR();
+    void resetEncoderL();
+
+    void startBothMotors(int pwm);
+    void startMotorR(int pwm);
+    void startMotorL(int pwm);
+
+    // Block until the given counter reaches targetPulses
+    void waitForPulses(volatile uint32_t &counter, uint32_t targetPulses);
+};
