@@ -1,16 +1,19 @@
+#include <Arduino.h>
 #pragma once
+#include <cstdint>
+
 
 // ─── Pin Definitions ───────────────────────────────────────────────────────
 
-// Motor A (Right wheel) – AIN1 and PWM tied together
-#define PIN_MOTOR_A_PWM   39
-#define PIN_MOTOR_A_IN2   38
-#define PIN_ENC_A         48  // Left wheel Encoder (single-phase only)
+// Motor R (Right wheel) – AIN1 and PWM tied together
+#define PIN_MOTOR_R_PWM   39
+#define PIN_MOTOR_R_IN2   38
+#define PIN_ENC_R         48  // Right wheel Encoder (single-phase only)
 
-// Motor B (Left wheel) – BIN1 and PWM tied together
-#define PIN_MOTOR_B_PWM   41
-#define PIN_MOTOR_B_IN2   40
-#define PIN_ENC_B         42  // Right wheel Encoder (single-phase only)
+// Motor L (Left wheel) – BIN1 and PWM tied together
+#define PIN_MOTOR_L_PWM   41
+#define PIN_MOTOR_L_IN2   40
+#define PIN_ENC_L         42  // Left wheel Encoder (single-phase only)
 
 // STBY is wired directly to 3.3V, no GPIO needed
 
@@ -37,22 +40,33 @@ public:
     MotorControls();
 
     // Move both wheels forward until each has counted x encoder pulses
-    void MoveForward(int x);
+    void MoveForward(uint32_t targetPulses);
     void MoveForwardNoEncoder(int x);
 
     // Turn the robot left 90 degrees in place
-    void TurnLeft();
+    void TurnLeft(uint32_t targetPulses);
     void TurnLeftNoEncoder(int x);
 
     // Turn the robot right 90 degrees in place
-    void TurnRight();
+    void TurnRight(uint32_t targetPulses);
     void TurnRightNoEncoder(int x);
 
 private:
     // Drive a single motor at the given PWM duty (0 = stop)
-    void setMotorA(int pwm);
-    void setMotorB(int pwm);
+    void setMotorR(int pwm);
+    void setMotorL(int pwm);
+
+    void stopMotorR();
+    void stopMotorL();
+
+    void resetEncoders();
+    void resetEncoderR();
+    void resetEncoderL();
+
+    void startBothMotors(int pwm);
+    void startMotorR(int pwm);
+    void startMotorL(int pwm);
 
     // Block until the given counter reaches targetPulses
-    void waitForPulses(volatile int &counter, int targetPulses);
+    void waitForPulses(volatile uint32_t &counter, uint32_t targetPulses);
 };

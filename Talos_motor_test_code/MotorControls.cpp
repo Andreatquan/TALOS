@@ -1,0 +1,169 @@
+#include <Arduino.h>
+#include <driver/ledc.h>
+#include "MotorControls.h"
+
+// ─────────────────────────────────────────────────────────────
+// Encoder counters (volatile, 32‑bit for safety)
+// ─────────────────────────────────────────────────────────────
+volatile uint32_t pulseCountR = 0;
+volatile uint32_t pulseCountL = 0;
+
+// ISR: increment counters on rising edge
+void IRAM_ATTR onEncoderR() { pulseCountR++; }
+void IRAM_ATTR onEncoderL() { pulseCountL++; }
+
+// ─────────────────────────────────────────────────────────────
+// Constructor
+// ─────────────────────────────────────────────────────────────
+MotorControls::MotorControls() {
+
+    // PWM for Motor Right
+    ledcAttach(PIN_MOTOR_R_PWM, 20000, 8);   // freq, resolution
+    pinMode(PIN_MOTOR_R_IN2, OUTPUT);
+
+    // PWM for Motor Left
+    ledcAttach(PIN_MOTOR_L_PWM, 20000, 8);
+    pinMode(PIN_MOTOR_L_IN2, OUTPUT);
+
+    // Encoder inputs
+    pinMode(PIN_ENC_R, INPUT_PULLUP);
+    pinMode(PIN_ENC_L, INPUT_PULLUP);
+
+    attachInterrupt(digitalPinToInterrupt(PIN_ENC_R), onEncoderR, RISING);
+    attachInterrupt(digitalPinToInterrupt(PIN_ENC_L), onEncoderL, RISING);
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// Public movement functions
+// ─────────────────────────────────────────────────────────────
+
+void MotorControls::MoveForward(uint32_t targetPulses) {
+
+    resetEncoders();
+    startBothMotors(PWM_SPEED);
+
+    // Wait for each motor independently
+    waitForPulses(pulseCountR, targetPulses);
+    stopMotorR();
+
+    waitForPulses(pulseCountL, targetPulses);
+    stopMotorL();
+}
+
+void MotorControls::TurnRight(uint32_t targetPulses) {
+
+    resetEncoderL();          // clear right encoder
+    startMotorR(PWM_SPEED);
+    stopMotorL();          // left wheel stays still
+
+    waitForPulses(pulseCountL, targetPulses);
+
+    stopMotorR();
+}
+
+
+void MotorControls::TurnLeft(uint32_t targetPulses) {
+
+    resetEncoderR();          // clear left encoder
+    startMotorL(PWM_SPEED);
+    stopMotorR();         // right wheel stays still
+
+    waitForPulses(pulseCountR, targetPulses);
+
+    stopMotorL();
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// No‑encoder timed movement
+// ─────────────────────────────────────────────────────────────
+
+void MotorControls::MoveForwardNoEncoder(int ms) {
+    setMotorR(PWM_SPEED + 20);
+    setMotorL(PWM_SPEED);
+    delay(ms);
+    setMotorR(0);
+    setMotorL(0);
+}
+
+void MotorControls::TurnRightNoEncoder(int ms) {
+    setMotorR(0);
+    setMotorL(PWM_SPEED);
+    delay(ms);
+    setMotorL(0);
+}
+
+void MotorControls::TurnLeftNoEncoder(int ms) {
+    setMotorR(PWM_SPEED);
+    setMotorL(0);
+    delay(ms);
+    setMotorR(0);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Private helpers
+// ─────────────────────────────────────────────────────────────
+
+void MotorControls::setMotorR(int pwm) {
+    ledcWrite(PIN_MOTOR_R_PWM, pwm);
+    digitalWrite(PIN_MOTOR_R_IN2, LOW);
+}
+
+void MotorControls::setMotorL(int pwm) {
+    ledcWrite(PIN_MOTOR_L_PWM, pwm);
+    digitalWrite(PIN_MOTOR_L_IN2, LOW);
+}
+
+void MotorControls::resetEncoders() {
+    noInterrupts();
+    pulseCountR = 0;
+    pulseCountL = 0;
+    interrupts();
+}
+
+void MotorControls::resetEncoderR() {
+    noInterrupts();
+    pulseCountR = 0;
+    interrupts();
+}
+
+void MotorControls::resetEncoderL() {
+    noInterrupts();
+    pulseCountL = 0;
+    interrupts();
+}
+
+void MotorControls::startBothMotors(int pwm) {
+    setMotorR(pwm);
+    setMotorL(pwm);
+}
+
+void MotorControls::startMotorR(int pwm) {
+    setMotorR(pwm);
+}
+
+void MotorControls::startMotorL(int pwm) {
+    setMotorL(pwm);
+}
+
+void MotorControls::stopMotorR() {
+    setMotorR(0);
+}
+
+void MotorControls::stopMotorL() {
+    setMotorL(0);
+}
+
+
+void MotorControls::waitForPulses(volatile uint32_t &counter, uint32_t target) {
+    while (counter < target) {
+        delay(1);
+    }
+
+    // brief reverse pulse to counter overshoot
+    ledcWrite(PIN_MOTOR_R_PWM, 0);
+    ledcWrite(PIN_MOTOR_L_PWM, 0);
+}
+
+
