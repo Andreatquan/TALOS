@@ -63,15 +63,15 @@ void On_Off_Switch(){
 // ---------------- Encoder Test ----------------
 void setup() {
 
-    Serial.begin(19200); // 115200 is default
+    Serial.begin(115200); // 115200 is default, but i've also been using 19200
     pinMode(PIN_BUTTON, INPUT_PULLUP);
-    Serial.println("Boot complete. Waiting for button press...");
 
     pinMode(ENC_L, INPUT);
 
     attachInterrupt(digitalPinToInterrupt(ENC_L), onEncL, CHANGE);
 
-    Serial.println("Encoder test ready. Spin the wheels.");
+    Serial.println("Encoder test ready. Spin the wheels!");
+    Serial.println("Boot complete. Waiting for button press...");
 }
 
 void loop() {
