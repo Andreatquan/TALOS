@@ -5,7 +5,7 @@
 #define PIN_BUTTON  0   // button pin
 #define ENC_L 42        // left encoder pin
 
-MotorControls motors;   //MotorControl object
+MotorControls Motors;   //MotorControl object
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- varibles for testing: ----------------
@@ -128,6 +128,7 @@ void SetPulseCount(int OldPulseCount, int NewPulseCount){
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- Encoder Test ----------------
 void setup() {
+
     PulseCounterL=0;
     LastPulseCountL=0;
     TargetPulses=5000;
@@ -141,10 +142,26 @@ void setup() {
 
     Serial.println("Encoder test ready. Spin the wheels!");
     Serial.println("Boot complete. Waiting for button press...");
+
+    /* // to move code over to the MotorControls library, I'll recreate this code below but using the library   
+    PulseCounterL=0;
+    LastPulseCountL=0;
+    TargetPulses=5000;
+
+    Serial.begin(115200); // 115200 is default, but i've also been using 19200
+    pinMode(PIN_BUTTON, INPUT_PULLUP);
+
+    pinMode(ENC_L, INPUT);
+
+    attachInterrupt(digitalPinToInterrupt(ENC_L), onEncL, CHANGE);
+
+    Serial.println("Encoder test ready. Spin the wheels!");
+    Serial.println("Boot complete. Waiting for button press...");
+    */
 }
 
 void loop() {
-    
+    /* // to move code over to the MotorControls library, I'll recreate this code below but using the library
     On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
     if(running){
         
@@ -164,77 +181,27 @@ void loop() {
         }
     }
     //Serial.println("Main loop restarting");
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// ---------------- D1 Test adapted (unsuccessfully tested) ----------------
-/*
-
-// setup()
-// standard Arduino initialization for a serial console and a pull‑up‑configured button input.
-// initializes USB serial communication at 115200 baud, configures the button pin as an input with an internal pull‑up resistor, and prints a startup message.
-void setup() {
-    /*Serial.begin(115200);
-    pinMode(PIN_BUTTON, INPUT_PULLUP);
-    Serial.println("Boot complete. Waiting for button press...");
-    
-
-}
-
-
-//loop()
-// Main loop for motor testing demonstration. this is a hardcoded demo using the outdated time-based methods.
-void loop() {
-    
- 
-    // when the button is pressed, print message, delay 2s and then continue.
-    if (!running) {
-        if (buttonPressed()) {
-            Serial.println("Button pressed! Starting in 2 seconds...");
-            delay(2000);
-            running = true;
-            Serial.println("Running!");
-        }
-        return;
-    }
-
-    //pull up to intersection
-    Serial.println("Moving forward...");
-    motors.MoveForward(100);
     */
-/*
-    //wait at stop bar
-    delay(2000);
 
-    //turn right
-    motors.MoveForward(500);
-    Serial.println("Turning right...");
-    motors.TurnRight(800);
+        On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
+    if(running){
+        
+        if(IsPinHigh(ENC_L, PulseCounterL)){ // print whether the encoder pin is high or low
+            Serial.println("High");
+        }
+        else{
+            Serial.println("Low");
+        }
 
-    //drive down road
-    Serial.println("Moving forward...");
-    motors.MoveForward(2000);
-    
-    //u-turn left
-    Serial.println("Turning left...");
-    motors.TurnLeft(1700);
-
-    //drive up to stop bar
-    Serial.println("Moving forward...");
-    motors.MoveForward(1500);
-
-    Serial.println("Turning left...");
-    //motors.TurnLeftNoEncoder(2000);
-
-    running = false;
-
-
-    if (buttonPressed()) {
-        Serial.println("Stopped.");
-        running = false;
+        if(UpdatePulseCount()){//if the pulse count has changed
+            if (IsPulseTargetMet(PulseCounterL)) { // check if target pulses have been reached/passed
+                //If so,
+                PrintPulseCountWithName(PulseCounterL, "L");  //print the count
+                turnOffRunning();                             // and stop the loop.
+            }
+        }
     }
+    //Serial.println("Main loop restarting");
 }
-*/
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+// END OF CODE //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

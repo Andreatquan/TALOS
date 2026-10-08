@@ -5,17 +5,15 @@
 
 // ─── Pin Definitions ───────────────────────────────────────────────────────
 
-// Motor R (Right wheel) – AIN1 and PWM tied together
+// Motor R (Right wheel) – AIN1 and PWM tied together // STBY is wired directly to 3.3V, no GPIO needed
 #define PIN_MOTOR_R_PWM   39
 #define PIN_MOTOR_R_IN2   38
 #define PIN_ENC_R         48  // Right wheel Encoder (single-phase only)
 
-// Motor L (Left wheel) – BIN1 and PWM tied together
+// Motor L (Left wheel) – BIN1 and PWM tied together // STBY is wired directly to 3.3V, no GPIO needed
 #define PIN_MOTOR_L_PWM   41
 #define PIN_MOTOR_L_IN2   40
 #define PIN_ENC_L         42  // Left wheel Encoder (single-phase only)
-
-// STBY is wired directly to 3.3V, no GPIO needed
 
 // IR Sensors
 #define PIN_IR_Front      14  // Front IR sensor(downward facing)
