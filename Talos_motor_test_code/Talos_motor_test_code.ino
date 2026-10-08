@@ -19,6 +19,8 @@ MotorControls motors;
 // Variable to start and stop looping in test
 bool running = false;
 
+// varibles for testing: 
+uint TargetPulses = 5000;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +104,7 @@ void loop() {
         Serial.println("loop restarting");
 
 
-        if (pulseL > 6000) {
+        if (pulseL > TargetPulses) {
             Serial.println("Stopped.");
             Serial.print("  L: ");
             Serial.println(pulseL);
