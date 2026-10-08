@@ -79,6 +79,7 @@ void loop() {
     On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
     if(running){
         
+        /*// show on serial monitor whether the Left encoder is HIGH or LOW
         pulseL = digitalRead(ENC_L);
         if(pulseL == HIGH){
             Serial.println("High");
@@ -86,11 +87,11 @@ void loop() {
         else{
             Serial.println("Low");
         }
-        
+        */
 
         
-    /*
-        // If either encoder count changed, flash LED and print counts
+    
+        // If either encoder count changed, print counts
         if (pulseL != lastL) {
 
             Serial.print("  L: ");
@@ -107,7 +108,7 @@ void loop() {
             Serial.println(pulseL);
             running = false;
         }
-    */
+    
     }
 }
 
