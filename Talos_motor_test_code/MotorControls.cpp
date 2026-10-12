@@ -226,4 +226,76 @@ void MotorControls::waitForPulses(volatile uint32_t &counter, uint32_t target) {
     ledcWrite(PIN_MOTOR_L_PWM, 0);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Below are methods imported from test code.
+
+// show on serial monitor whether the Left encoder is HIGH or LOW
+bool IsPinHigh(int PinNum, int PulseCounter){
+    PulseCounter = digitalRead(PinNum);
+    if(PulseCounter){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+// print count
+void PrintPulseCount(int PulseCounter){
+    //print the pulse counter
+    Serial.println(PulseCounter);
+    return;
+}
+// print count with name
+void PrintPulseCountWithName(int PulseCounter, String PulseCounterName){
+    //print the pulse counter with its label/name
+    Serial.print(PulseCounterName);
+    Serial.print(": ");
+    Serial.println(PulseCounter);
+    return;
+}
+// check if target pulses have been passed. NOTE: this method does not update the count
+bool IsPulseTargetMet(int PulseTarget, int PulseCount){
+    if (PulseCount > PulseTarget) { 
+        return true;
+    }
+    return false;
+}
+bool IsPulseTargetMet(int PulseCount){
+    if (PulseCount > TargetPulses) { 
+        return true;
+    }
+    return false;
+}
+
+// check if pulse count has changed, If encoder count changed, update count and return true. else return false.
+bool UpdatePulseCount(int OldPulseCount, int NewPulseCount){
+    if (NewPulseCount != OldPulseCount) {
+        //set count to new value
+        SetPulseCount(OldPulseCount, NewPulseCount);
+        return true;
+    }
+    return false;
+}
+bool UpdatePulseCount(){
+    bool change=false;
+    if (PulseCounterL != LastPulseCountL) {
+        //set count to new value
+        SetPulseCount(LastPulseCountL, PulseCounterL);
+        change = true;
+    }
+    if (PulseCounterR != LastPulseCountR) {
+        //set count to new value
+        SetPulseCount(LastPulseCountR, PulseCounterR);
+        change = true;
+    }
+    return change;
+}
+// change pulse count to new value
+void SetPulseCount(int OldPulseCount, int NewPulseCount){
+    // update last pulse count to the new count
+    OldPulseCount = NewPulseCount;
+    return;
+}
+
 

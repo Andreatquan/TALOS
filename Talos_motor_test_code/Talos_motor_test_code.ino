@@ -215,8 +215,8 @@ void loop() {
     //Serial.println("Main loop restarting");
 }
 
-///////////////////////////////////////////////////////////////////////////////turn right
-/*
+        ///////////////////////////////////////////////////////////////////////////////turn right
+        /*
         motors.setMotorL(PWM_SPEED);
         while(!IsPulseTargetMet(PulseCounterL)){//if the left pulse count target has not yet been met
             UpdatePulseCount();
@@ -227,8 +227,8 @@ void loop() {
         turnOffRunning();
         SetPulseCount(PulseCounterL, 0);//reset counters
         SetPulseCount(PulseCounterR, 0);
-*/ 
-///////////////////////////////////////////////////////////////////////////////turn left 
+        */ 
+        ///////////////////////////////////////////////////////////////////////////////turn left 
 
 
         motors.setMotorR(PWM_SPEED);
