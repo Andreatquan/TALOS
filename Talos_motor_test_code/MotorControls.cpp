@@ -2,20 +2,43 @@
 #include <driver/ledc.h>
 #include "MotorControls.h"
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ---------------- local variables ----------------
 // ─────────────────────────────────────────────────────────────
+
+
 // Encoder counters (volatile, 32‑bit for safety)
-// ─────────────────────────────────────────────────────────────
-volatile uint32_t pulseCountR = 0;
+volatile uint32_t pulseCountR = 0;// counts pulses through interrupts outside of method actions
 volatile uint32_t pulseCountL = 0;
+
+static uint32_t LastPulseCountL = 0;//intitialization of pulse counter value storage. Changes only when changed buy code(update pulses methods) 
+static uint32_t LastPulseCountR = 0;
 
 // ISR: increment counters on rising edge
 void IRAM_ATTR onEncoderR() { pulseCountR++; }
 void IRAM_ATTR onEncoderL() { pulseCountL++; }
 
+// IR trigger flags
+volatile bool IR_Left_Flag  = false;
+volatile bool IR_Right_Flag = false;
+volatile bool IR_Front_Flag = false;
+
+// ISR for IR sensors
+void IRAM_ATTR onIR_Left()  { IR_Left_Flag  = true; }
+void IRAM_ATTR onIR_Right() { IR_Right_Flag = true; }
+void IRAM_ATTR onIR_Front() { IR_Front_Flag = true; }
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ---------------- Constructors ----------------
 // ─────────────────────────────────────────────────────────────
-// Constructor
-// ─────────────────────────────────────────────────────────────
+
 MotorControls::MotorControls() {
+
+    // Motors -------------------------------------------------------
+    // --------------------------------------------------------------
 
     // PWM for Motor Right
     ledcAttach(PIN_MOTOR_R_PWM, 20000, 8);   // freq, resolution
@@ -25,13 +48,40 @@ MotorControls::MotorControls() {
     ledcAttach(PIN_MOTOR_L_PWM, 20000, 8);
     pinMode(PIN_MOTOR_L_IN2, OUTPUT);
 
+    // Encoders -----------------------------------------------------
+    // --------------------------------------------------------------
+    
     // Encoder inputs
     pinMode(PIN_ENC_R, INPUT_PULLUP);
     pinMode(PIN_ENC_L, INPUT_PULLUP);
 
+    // Encoder interrupts
     attachInterrupt(digitalPinToInterrupt(PIN_ENC_R), onEncoderR, RISING);
     attachInterrupt(digitalPinToInterrupt(PIN_ENC_L), onEncoderL, RISING);
+
+    // Encoder Variables
+    pulseCountR = 0;
+    pulseCountL = 0;
+
+    LastPulseCountL = 0;  
+    LastPulseCountR = 0;
+
+    // IR Sensors -----------------------------------------------------
+    // --------------------------------------------------------------
+
+    // IR inputs
+    pinMode(PIN_IR_Left,  INPUT_PULLUP);
+    pinMode(PIN_IR_Right, INPUT_PULLUP);
+    pinMode(PIN_IR_Front, INPUT_PULLUP);
+
+
+    // IR Sensor interrupts
+    attachInterrupt(digitalPinToInterrupt(PIN_IR_Left),  onIR_Left,  RISING);
+    attachInterrupt(digitalPinToInterrupt(PIN_IR_Right), onIR_Right, RISING);
+    attachInterrupt(digitalPinToInterrupt(PIN_IR_Front), onIR_Front, RISING);
+
 }
+
 
 
 // ─────────────────────────────────────────────────────────────

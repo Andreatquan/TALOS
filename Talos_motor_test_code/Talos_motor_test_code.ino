@@ -139,6 +139,18 @@ void SetPulseCount(int OldPulseCount, int NewPulseCount){
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- Encoder Test ----------------
 void setup() {
+    Serial.begin(19200); // 115200 is default, but i've also been using 19200
+    pinMode(PIN_BUTTON, INPUT_PULLUP); // button state setting
+
+    pinMode(ENC_L, INPUT);// Left encoder state setting
+    pinMode(ENC_R, INPUT);// right encoder state setting
+
+    attachInterrupt(digitalPinToInterrupt(ENC_L), onEncL, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENC_R), onEncR, CHANGE);
+
+    Serial.println("Encoder test ready. Spin the wheels!");
+    Serial.println("Boot complete. Waiting for button press...");
+
     PulseCounterL=0;
     LastPulseCountL=0;
     PulseCounterR=0;
@@ -146,18 +158,6 @@ void setup() {
     TargetPulses=5000;
 
     motors = MotorControls();
-
-    Serial.begin(19200); // 115200 is default, but i've also been using 19200
-    pinMode(PIN_BUTTON, INPUT_PULLUP);
-
-    pinMode(ENC_L, INPUT);
-    pinMode(ENC_R, INPUT);
-
-    attachInterrupt(digitalPinToInterrupt(ENC_L), onEncL, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(ENC_R), onEncR, CHANGE);
-
-    Serial.println("Encoder test ready. Spin the wheels!");
-    Serial.println("Boot complete. Waiting for button press...");
 }
 
 void loop() {
