@@ -65,6 +65,8 @@ public:
 
     void stopMotorR();
     void stopMotorL();
+    void stopBothMotors();
+    void brakeBothMotors();
 
     void resetEncoders();
     void resetEncoderR();

@@ -8,6 +8,7 @@
 
 MotorControls motors;   //MotorControl object
 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ---------------- varibles for testing: ----------------
 
@@ -162,8 +163,6 @@ void setup() {
 
 void loop() {
     
-    
-
     On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
     if(running){
         if (!IsPulseTargetMet(PulseCounterR)){
@@ -216,75 +215,40 @@ void loop() {
     //Serial.println("Main loop restarting");
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// ---------------- D1 Test adapted (unsuccessfully tested) ----------------
+///////////////////////////////////////////////////////////////////////////////turn right
 /*
-
-// setup()
-// standard Arduino initialization for a serial console and a pull‑up‑configured button input.
-// initializes USB serial communication at 115200 baud, configures the button pin as an input with an internal pull‑up resistor, and prints a startup message.
-void setup() {
-    /*Serial.begin(115200);
-    pinMode(PIN_BUTTON, INPUT_PULLUP);
-    Serial.println("Boot complete. Waiting for button press...");
-    
-
-}
-
-
-//loop()
-// Main loop for motor testing demonstration. this is a hardcoded demo using the outdated time-based methods.
-void loop() {
-    
- 
-    // when the button is pressed, print message, delay 2s and then continue.
-    if (!running) {
-        if (buttonPressed()) {
-            Serial.println("Button pressed! Starting in 2 seconds...");
-            delay(2000);
-            running = true;
-            Serial.println("Running!");
+        motors.setMotorL(PWM_SPEED);
+        while(!IsPulseTargetMet(PulseCounterL)){//if the left pulse count target has not yet been met
+            UpdatePulseCount();
+            PrintPulseCountWithName(PulseCounterL, "left enc: "); 
         }
-        return;
+        motors.setMotorL(0);
+        PrintPulseCountWithName(PulseCounterL, "left enc: ");
+        turnOffRunning();
+        SetPulseCount(PulseCounterL, 0);//reset counters
+        SetPulseCount(PulseCounterR, 0);
+*/ 
+///////////////////////////////////////////////////////////////////////////////turn left 
+
+
+        motors.setMotorR(PWM_SPEED);
+        while(!IsPulseTargetMet(PulseCounterR)){//if the left pulse count target has not yet been met
+            UpdatePulseCount();
+            PrintPulseCountWithName(PulseCounterR, "right enc: "); 
+        }
+        motors.setMotorR(0);
+        PrintPulseCountWithName(PulseCounterR, "right enc: ");
+        turnOffRunning();
+        SetPulseCount(PulseCounterL, 0);//reset counters
+        SetPulseCount(PulseCounterR, 0);
+
+
     }
 
-    //pull up to intersection
-    Serial.println("Moving forward...");
-    motors.MoveForward(100);
-    */
-/*
-    //wait at stop bar
-    delay(2000);
-
-    //turn right
-    motors.MoveForward(500);
-    Serial.println("Turning right...");
-    motors.TurnRight(800);
-
-    //drive down road
-    Serial.println("Moving forward...");
-    motors.MoveForward(2000);
-    
-    //u-turn left
-    Serial.println("Turning left...");
-    motors.TurnLeft(1700);
-
-    //drive up to stop bar
-    Serial.println("Moving forward...");
-    motors.MoveForward(1500);
-
-    Serial.println("Turning left...");
-    //motors.TurnLeftNoEncoder(2000);
-
-    running = false;
 
 
-    if (buttonPressed()) {
-        Serial.println("Stopped.");
-        running = false;
-    }
+    //Serial.println("Main loop restarting");
 }
-*/
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 

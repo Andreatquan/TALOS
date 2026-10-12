@@ -97,15 +97,15 @@ void MotorControls::MoveForward(uint32_t targetPulses) {
     waitForPulses(pulseCountR, targetPulses);
     stopMotorR();
 
-    waitForPulses(pulseCountL, targetPulses);
+    waitForPulses(pulseCountR, targetPulses);
     stopMotorL();
 }
 
 void MotorControls::TurnRight(uint32_t targetPulses) {
 
     resetEncoderL();          // clear right encoder
-    startMotorR(PWM_SPEED);
-    stopMotorL();          // left wheel stays still
+    startMotorL(PWM_SPEED);
+    stopMotorR();          // left wheel stays still
 
     waitForPulses(pulseCountL, targetPulses);
 
@@ -116,8 +116,8 @@ void MotorControls::TurnRight(uint32_t targetPulses) {
 void MotorControls::TurnLeft(uint32_t targetPulses) {
 
     resetEncoderR();          // clear left encoder
-    startMotorL(PWM_SPEED);
-    stopMotorR();         // right wheel stays still
+    startMotorR(PWM_SPEED);
+    stopMotorL();         // left wheel stays still
 
     waitForPulses(pulseCountR, targetPulses);
 
@@ -203,6 +203,16 @@ void MotorControls::stopMotorR() {
 
 void MotorControls::stopMotorL() {
     setMotorL(0);
+}
+
+void MotorControls::stopBothMotors() {
+    ledcWrite(PIN_MOTOR_R_PWM, 0);
+    ledcWrite(PIN_MOTOR_L_PWM, 0);
+}
+
+void MotorControls::brakeBothMotors() {
+    ledcWrite(PIN_MOTOR_R_PWM, 0);
+    ledcWrite(PIN_MOTOR_L_PWM, 0);
 }
 
 
