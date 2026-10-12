@@ -25,7 +25,7 @@
 static const unsigned long VISION_MAX_AGE_MS = 200;
 
 // ---------------------------------------------------------------------
-// The latest answer, shared between the two cores
+// Writes answer from trafficLight.h and stopSign.h
 // ---------------------------------------------------------------------
 struct VisionResult {
   LightColor    light;        // latest light color
@@ -34,7 +34,7 @@ struct VisionResult {
   unsigned long updatedAt;    // when this answer was saved (0 = never)
 };
 
-static VisionResult  visionShared  = {NO_LIGHT, 0, false, 0};
+static VisionResult  visionShared  = {NO_LIGHT, 0, false, 0}; //no light, no green, no sign, never written
 static unsigned long visionFrameMs = 0;   // how long the last frame took (for tuning)
 
 // Lock so one core never reads the answer while the other is halfway
