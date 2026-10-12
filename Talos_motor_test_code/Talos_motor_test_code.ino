@@ -3,7 +3,7 @@
 
 
 #define PIN_BUTTON  0   // button pin
-#define ENC_L 42        // left encoder pin
+#define ENC_L 2        // left encoder pin
 #define ENC_R 1        // Right encoder pin
 
 MotorControls motors;   //MotorControl object
@@ -166,27 +166,52 @@ void loop() {
 
     On_Off_Switch(); // if off, wait till button press. if on, stop if button pressed.
     if(running){
-
-        motors.setMotorR(255);
-
+        if (!IsPulseTargetMet(PulseCounterR)){
+            motors.setMotorR(200);
+        }
+        if (!IsPulseTargetMet(PulseCounterL)){
+            motors.setMotorL(200);
+        }
+        
+        
+        /*
         if(IsPinHigh(ENC_R, PulseCounterR)){ // print whether the right encoder pin is high or low
             Serial.println("High");
         }
         else{
             Serial.println("Low");
         }
-
+        if(IsPinHigh(ENC_L, PulseCounterL)){ // print whether the left encoder pin is high or low
+            Serial.println("High");
+        }
+        else{
+            Serial.println("Low");
+        }
+        */
         if(UpdatePulseCount()){//if the pulse count has changed
             if (IsPulseTargetMet(PulseCounterR)) { // check if target pulses have been reached/passed
                 //If so,
                 PrintPulseCountWithName(PulseCounterR, "R");  //print the count
-                turnOffRunning();                             // and stop the loop.
+                motors.setMotorR(0);
+                //turnOffRunning();                             // and stop the loop.
+            }
+            if (IsPulseTargetMet(PulseCounterL)) { // check if target pulses have been reached/passed
+                //If so,
+                PrintPulseCountWithName(PulseCounterL, "L");  //print the count
+                motors.setMotorL(0);
+                //turnOffRunning();                             // and stop the loop.
             }
         }
+
+        if(IsPulseTargetMet(PulseCounterR) && IsPulseTargetMet(PulseCounterL)){
+            turnOffRunning();                             // and stop the loop.
+        }
         PrintPulseCountWithName(PulseCounterR, "R");
+        PrintPulseCountWithName(PulseCounterL, "L");
     }
     else{
-        motors.setMotorR(0);
+
+        
     }
     //Serial.println("Main loop restarting");
 }
