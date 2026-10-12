@@ -8,8 +8,8 @@
 
 
 // Encoder counters (volatile, 32‑bit for safety)
-volatile uint32_t pulseCountR = 0;// counts pulses through interrupts outside of method actions
-volatile uint32_t pulseCountL = 0;
+volatile uint32_t pulseCountR= 0;// counts pulses through interrupts outside of method actions
+volatile uint32_t pulseCountL= 0;
 
 static uint32_t LastPulseCountL = 0;//intitialization of pulse counter value storage. Changes only when changed buy code(update pulses methods) 
 static uint32_t LastPulseCountR = 0;
@@ -261,12 +261,12 @@ bool IsPulseTargetMet(int PulseTarget, int PulseCount){
     }
     return false;
 }
-bool IsPulseTargetMet(int PulseCount){
+/*bool IsPulseTargetMet(int PulseCount){
     if (PulseCount > TargetPulses) { 
         return true;
     }
     return false;
-}
+}*/
 
 // check if pulse count has changed, If encoder count changed, update count and return true. else return false.
 bool UpdatePulseCount(int OldPulseCount, int NewPulseCount){
@@ -279,14 +279,14 @@ bool UpdatePulseCount(int OldPulseCount, int NewPulseCount){
 }
 bool UpdatePulseCount(){
     bool change=false;
-    if (PulseCounterL != LastPulseCountL) {
+    if (pulseCountL!= LastPulseCountL) {
         //set count to new value
-        SetPulseCount(LastPulseCountL, PulseCounterL);
+        SetPulseCount(LastPulseCountL, pulseCountL);
         change = true;
     }
-    if (PulseCounterR != LastPulseCountR) {
+    if (pulseCountR!= LastPulseCountR) {
         //set count to new value
-        SetPulseCount(LastPulseCountR, PulseCounterR);
+        SetPulseCount(LastPulseCountR, pulseCountR);
         change = true;
     }
     return change;

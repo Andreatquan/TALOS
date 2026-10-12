@@ -229,7 +229,7 @@ void loop() {
         SetPulseCount(PulseCounterR, 0);
         */ 
         ///////////////////////////////////////////////////////////////////////////////turn left 
-
+/*
 
         motors.setMotorR(PWM_SPEED);
         while(!IsPulseTargetMet(PulseCounterR)){//if the left pulse count target has not yet been met
@@ -249,6 +249,6 @@ void loop() {
 
     //Serial.println("Main loop restarting");
 }
-
+*/
 
 
