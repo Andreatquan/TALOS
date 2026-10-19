@@ -28,8 +28,8 @@
 
 // --- Color: stop sign HSV thresholds --------------------------------
 // Separate from traffic-light values because the sign reflects light.
-static const int SIGN_SAT_MIN = 90;   // minimum color saturation
-static const int SIGN_VAL_MIN = 60;   // minimum brightness
+static const int SIGN_SAT_MIN = 60;   // minimum color saturation
+static const int SIGN_VAL_MIN = 40;   // minimum brightness
 
 // Red wraps around hue 0, so use two red ranges.
 static const int SIGN_RED_HUE_LOW_MAX  = 20;
@@ -60,10 +60,10 @@ static const int SIGN_FLAT_EDGES_NEEDED = 3;
 
 // --- Camera crop -----------------------------------------------------
 // Region of the frame checked for the stop sign. Max 240 x 240.
-static const int SIGN_CROP_X0 = 0;
-static const int SIGN_CROP_Y0 = 0;
+static const int SIGN_CROP_X0 = 100;
+static const int SIGN_CROP_Y0 = 60;
 static const int SIGN_CROP_X1 = 240;
-static const int SIGN_CROP_Y1 = 240;
+static const int SIGN_CROP_Y1 = 180;
 
 // --- Tuning info -----------------------------------------------------
 // Pass a SignDebug to detectStopSign() in calibration mode to see why
@@ -106,7 +106,6 @@ inline bool detectStopSign(camera_fb_t *fb, SignDebug *dbg = nullptr) {
 
       uint16_t p = px[y * fb->width + x];
       p = (uint16_t)((p >> 8) | (p << 8));   // camera sends bytes swapped: fix order
-
 
       int r = ((p >> 11) & 0x1F) << 3;
       int g = ((p >>  5) & 0x3F) << 2;

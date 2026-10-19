@@ -7,16 +7,21 @@
 #include "board_config.h"    // camera pin numbers
 #include "trafficLight.h"    // ANDREA: detectLightColor()
 #include "stopSign.h"        // ANDREA: detectStopSign()
-#include "cameraTask.h"      // ANDREA: camera + detection on core 0
-#include "navigation.h"      // ANDREA: navigationSetup(), navigationLoop()
 
 // =====================================================================
 // MODE SWITCH
-//   1 = CALIBRATION: camera tuning. WiFi snapshot page + detection
-//                    numbers in the Serial Monitor. Bot does NOT drive.
+//   1 = CALIBRATION: camera tuning. Live view page + detection numbers.
+//                    Bot does NOT drive. Builds WITHOUT Luke's or
+//                    Arturo's code, so it always works for camera testing.
 //   0 = RUN:         the real course. No WiFi. Navigation drives the bot.
+//                    Needs Luke's and Arturo's code to build.
 // =====================================================================
-#define CALIBRATION_MODE 0
+#define CALIBRATION_MODE 1
+
+#if !CALIBRATION_MODE
+#include "cameraTask.h"      // ANDREA: camera + detection on core 0
+#include "navigation.h"      // ANDREA: navigationSetup(), navigationLoop()
+#endif
 
 // Set to 1 if the snapshot page shows the picture upside down.
 // Both detectors crop by position, so the picture must be upright.
@@ -81,10 +86,12 @@ bool setupCamera() {
   //s->set_whitebal(s, 0);       // auto white balance off
   //s->set_awb_gain(s, 0);
   //s->set_exposure_ctrl(s, 0);  // auto exposure off
-  //s->set_aec2(s, 0);
+  //s->set_aec2(s, 2);
   //s->set_gain_ctrl(s, 0);      // auto gain off
   //s->set_agc_gain(s, 0);
   //s->set_aec_value(s, 400);    // TUNE THIS. Lower = darker frame.
+
+  s->set_ae_level(s, -2);        // darker picture so LEDs keep their color (-2 darkest .. +2)
 
   Serial.println("Camera ready");
   return true;
@@ -96,7 +103,7 @@ bool setupCamera() {
 #if CALIBRATION_MODE
 
 const char *ssid     = "Andrea_iPhone";
-const char *password = "abcde12345";    
+const char *password = "abcde12345";     // don't share this file with the password in it
 
 WebServer server(80);
 bool serverRunning = false;
@@ -131,6 +138,9 @@ void handleInfo() {
 }
 
 // One fresh camera frame as a JPEG (the live page loads this over and over).
+// Draws the two detection areas on the picture first:
+//   white box = traffic light ROI   (trafficLight.h)
+//   red box   = stop sign crop      (stopSign.h)
 void handleSnapshot() {
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
@@ -138,10 +148,27 @@ void handleSnapshot() {
     return;
   }
 
+  uint16_t *img = (uint16_t *)fb->buf;
+  int w = fb->width;
+
+  // White box: traffic light ROI.
+  int x0 = fb->width  * ROI_X_START, x1 = fb->width  * ROI_X_END - 1;
+  int y0 = fb->height * ROI_Y_START, y1 = fb->height * ROI_Y_END - 1;
+  for (int x = x0; x <= x1; x++) { img[y0 * w + x] = 0xFFFF; img[y1 * w + x] = 0xFFFF; }
+  for (int y = y0; y <= y1; y++) { img[y * w + x0] = 0xFFFF; img[y * w + x1] = 0xFFFF; }
+
+  // Red box: stop sign crop.
+  const uint16_t RED_PX = 0x00F8;   // red, in the camera's swapped byte order
+  int sx0 = SIGN_CROP_X0, sx1 = min(SIGN_CROP_X1, (int)fb->width)  - 1;
+  int sy0 = SIGN_CROP_Y0, sy1 = min(SIGN_CROP_Y1, (int)fb->height) - 1;
+  for (int x = sx0; x <= sx1; x++) { img[sy0 * w + x] = RED_PX; img[sy1 * w + x] = RED_PX; }
+  for (int y = sy0; y <= sy1; y++) { img[y * w + sx0] = RED_PX; img[y * w + sx1] = RED_PX; }
+
+  // Now turn the picture (with both boxes) into a JPEG.
   uint8_t *jpg = NULL;
   size_t jpgLen = 0;
   bool ok = frame2jpg(fb, 80, &jpg, &jpgLen);
-  esp_camera_fb_return(fb);
+  esp_camera_fb_return(fb);   // give the frame back to the camera
 
   if (!ok) {
     server.send(500, "text/plain", "JPEG conversion failed");
@@ -234,6 +261,7 @@ void calibrationLoop() {
 
 #endif
 
+#if !CALIBRATION_MODE
 // =====================================================================
 // RUN MODE: camera task on core 0, Navigation here on core 1
 // =====================================================================
@@ -252,6 +280,7 @@ void runLoop() {
   }
 #endif
 }
+#endif
 
 // =====================================================================
 // SETUP + LOOP
@@ -276,6 +305,7 @@ void setup() {
     cameraReady = false;
     return;
   }
+  setupSensors();                // ARTURO: IR + ultrasonic pins
   navigationSetup();             // waits for start button + countdown, starts timer
 #endif
 }

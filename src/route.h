@@ -7,6 +7,9 @@ enum RouteStep {
   TURN_RIGHT
 };
 
+// The route: one direction per intersection, in the order the bot reaches them.
+// Traffic lights are NOT listed here. The camera finds them at each stop line,
+// so the professor can move lights without changing this file.
 const RouteStep ROUTE[] = {
   TURN_RIGHT,    // intersection 1
   GO_STRAIGHT,   // intersection 2

@@ -22,10 +22,9 @@
 // cameraTask writes it on the note → Navigation decides what to do
 //---------------------------------------------------------------------------------------------------------------------------------------
 
-// Possible traffic light results
+// Possible traffic light results.
 enum LightColor { NO_LIGHT, RED_LIGHT, YELLOW_LIGHT, GREEN_LIGHT };
 
-// Answer into print text
 inline const char* lightName(LightColor c) {
   switch (c) {
     case RED_LIGHT:    return "RED";
@@ -37,20 +36,21 @@ inline const char* lightName(LightColor c) {
 
 // --- ROI --------------------------------------------------------------
 // Scan only the top half of the frame.
-static const float ROI_Y_START = 0.0f;
+static const float ROI_Y_START = 0.25f;
 static const float ROI_Y_END   = 0.5f;
-static const float ROI_X_START = 0.0f;
-static const float ROI_X_END   = 1.0f;
+static const float ROI_X_START = 0.20f;
+static const float ROI_X_END   = 0.60f;
 
 // --- HSV thresholds ---------------------------------------------------
 // Minimum saturation and brightness for a valid LED pixel.
-static const int SAT_MIN = 120;
-static const int VAL_MIN = 120;
+static const int SAT_MIN        = 120;   // red + green
+static const int YELLOW_SAT_MIN = 60;    // yellow LED looks pale on camera
+static const int VAL_MIN        = 120;
 
 // Hue ranges in degrees.
 static const int RED_HUE_LOW_MAX   = 15;
 static const int RED_HUE_HIGH_MIN  = 345;
-static const int YELLOW_HUE_MIN    = 35;
+static const int YELLOW_HUE_MIN    = 20;   // was 35: camera sees yellow LED as orange-ish
 static const int YELLOW_HUE_MAX    = 70;
 static const int GREEN_HUE_MIN     = 80;
 static const int GREEN_HUE_MAX     = 165;
@@ -109,7 +109,6 @@ inline LightColor detectLightColor(camera_fb_t *fb,
       uint16_t p = px[y * fb->width + x];
       p = (uint16_t)((p >> 8) | (p << 8));   // camera sends bytes swapped: fix order
 
-
       // Convert RGB565 to RGB.
       int r = ((p >> 11) & 0x1F) << 3;
       int g = ((p >>  5) & 0x3F) << 2;
@@ -118,8 +117,12 @@ inline LightColor detectLightColor(camera_fb_t *fb,
       int h, s, v;
       rgbToHsv(r, g, b, h, s, v);
 
-      // Ignore dull or dark pixels.
-      if (s < SAT_MIN || v < VAL_MIN) continue;
+      // Ignore dim pixels.
+      if (v < VAL_MIN) continue;
+
+      // Ignore washed-out pixels. Yellow is allowed to be paler.
+      bool yellowHue = (h >= YELLOW_HUE_MIN && h <= YELLOW_HUE_MAX);
+      if (s < (yellowHue ? YELLOW_SAT_MIN : SAT_MIN)) continue;
 
       // Count matching colors.
       if (h <= RED_HUE_LOW_MAX || h >= RED_HUE_HIGH_MIN) {
